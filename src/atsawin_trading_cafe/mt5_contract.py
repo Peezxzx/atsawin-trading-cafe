@@ -166,7 +166,9 @@ def build_pretrade_plan(
     """Build a safe pre-trade plan from bridge signal + live MT5 market data.
 
     The EA still owns actual execution. Trading Cafe calculates and explains the
-    plan so dashboard/Telegram can show what will happen before the EA acts.
+    plan so dashboard/Telegram can show and analyze the setup before any future
+    human/EA decision. `allowed` means the calculated plan passes research
+    filters; it is not an execution command.
     """
     side = normalize_side(signal_payload.get("signal"))
     base_symbol, mt5_symbol = signal_symbols(signal_payload)
@@ -241,7 +243,7 @@ def format_plan_thai(plan: PreTradePlan) -> str:
     if plan.action == "hold":
         return "ตอนนี้ Trading Cafe เห็นสัญญาณ HOLD ยังไม่ควรให้ EA เปิดไม้ใหม่"
 
-    status = "อนุญาตตามเงื่อนไข" if plan.allowed else "ยังไม่ควรเข้า"
+    status = "คุณภาพแผนผ่านเกณฑ์สำหรับบันทึก/วิเคราะห์" if plan.allowed else "ยังเป็นแผนที่ควรระวัง/เก็บไว้รีวิว"
     lines = [
         f"Pre-trade plan: {plan.mt5_symbol} {plan.action.upper()} — {status}",
         f"confidence: {plan.confidence:.2f}",
@@ -253,5 +255,5 @@ def format_plan_thai(plan: PreTradePlan) -> str:
     ]
     if plan.warnings:
         lines.append("ข้อควรระวัง: " + ", ".join(plan.warnings))
-    lines.append("EA ยังเป็นตัว execute ส่วน Trading Cafe ทำหน้าที่คำนวณ/ตรวจ/อธิบายก่อนเข้า")
+    lines.append("Trading Cafe ใช้เพื่อคำนวณ/บันทึก/วิเคราะห์แผน ไม่ใช่คำสั่งให้เปิดออเดอร์")
     return "\n".join(lines)

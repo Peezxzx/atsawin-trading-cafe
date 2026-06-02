@@ -71,9 +71,10 @@ python -m atsawin_trading_cafe.mt5_live --login 433684944 --server Exness-MT5Tri
 
 หน้าที่ตอนนี้:
 
-- EA/bridge เดิมยังเป็นตัวสร้าง signal และ execute order
-- Trading Cafe อ่าน signal เดียวกันเพื่อคำนวณ lot, actual RR, spread, warning และสรุปภาษาไทย
-- ถ้าจะให้ EA อ่าน `trading_cafe_report.json` เพื่อใช้เป็น gate ก่อน execute สามารถเพิ่มใน EA phase ถัดไปได้
+- EA/bridge เดิมยังเป็นตัวสร้าง signal และ execute order ตามระบบเดิม
+- Trading Cafe อ่าน signal เดียวกันเพื่อคำนวณ entry, lot, actual RR, spread, warning และวิเคราะห์คุณภาพแผน
+- `trading_cafe_report.json` ใช้เพื่อ dashboard/Telegram/journal/research เท่านั้น ยังไม่ใช้เป็นคำสั่งหรือ gate ให้ EA
+- อนาคตถ้าจะให้ EA เอาผลวิเคราะห์ไปใช้ค่อยออกแบบเพิ่มอีกที
 
 ## Quick test
 
@@ -84,6 +85,7 @@ python tests/test_prompts.py
 python tests/test_journal.py
 python tests/test_risk.py
 python tests/test_mt5_contract.py
+python tests/test_plan_analysis.py
 ```
 
 ## Run API แบบ optional

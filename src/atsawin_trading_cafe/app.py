@@ -13,6 +13,7 @@ except ImportError:  # keep core package usable without API deps
 from .journal import format_summary_thai, summarize_trades
 from .models import TradeEntry, TradeOutcome, TradeSide
 from .mt5_contract import MarketSnapshot, SymbolSpec, build_pretrade_plan, plan_to_report
+from .plan_analysis import analysis_to_report, analyze_pretrade_plan, format_analysis_thai
 from .prompts import ATSAWIN_TRADING_CAFE_SYSTEM_PROMPT
 from .risk import check_trade_risk
 
@@ -100,4 +101,8 @@ if app is not None:
             max_spread_points=float(payload.get("max_spread_points", 500.0)),
             min_actual_rr=float(payload.get("min_actual_rr", 1.0)),
         )
-        return plan_to_report(plan, signal)
+        report = plan_to_report(plan, signal)
+        analysis = analyze_pretrade_plan(plan)
+        report["analysis"] = analysis_to_report(analysis)
+        report["analysis_thai"] = format_analysis_thai(analysis)
+        return report

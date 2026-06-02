@@ -22,6 +22,7 @@ from .mt5_contract import (
     plan_to_report,
     read_signal,
 )
+from .plan_analysis import analysis_to_report, analyze_pretrade_plan, format_analysis_thai
 
 
 def _import_mt5():
@@ -99,6 +100,9 @@ def run_once(
             min_actual_rr=min_actual_rr,
         )
         report = plan_to_report(plan, signal)
+        analysis = analyze_pretrade_plan(plan)
+        report["analysis"] = analysis_to_report(analysis)
+        report["analysis_thai"] = format_analysis_thai(analysis)
         report["market"] = asdict(market)
         report["symbol_spec"] = asdict(spec)
         report_path = Path(signal_dir) / DEFAULT_REPORT_FILE
