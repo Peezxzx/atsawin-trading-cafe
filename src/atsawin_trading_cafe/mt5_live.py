@@ -12,6 +12,7 @@ import time
 from dataclasses import asdict
 from pathlib import Path
 
+from .history_store import DEFAULT_CSV_FILE, DEFAULT_DB_FILE, append_history, summarize_history
 from .mt5_contract import (
     DEFAULT_REPORT_FILE,
     DEFAULT_SIGNAL_DIR,
@@ -74,6 +75,7 @@ def run_once(
     min_confidence: float = 0.30,
     max_spread_points: float = 500.0,
     min_actual_rr: float = 1.0,
+    record_history: bool = True,
 ) -> dict:
     mt5 = _import_mt5()
     init_kwargs = {}
@@ -107,6 +109,15 @@ def run_once(
         report["symbol_spec"] = asdict(spec)
         report_path = Path(signal_dir) / DEFAULT_REPORT_FILE
         atomic_write_json(report_path, report)
+        if record_history:
+            history_meta = append_history(
+                Path(signal_dir) / DEFAULT_DB_FILE,
+                Path(signal_dir) / DEFAULT_CSV_FILE,
+                report,
+            )
+            report["history"] = history_meta
+            report["history_summary"] = summarize_history(Path(signal_dir) / DEFAULT_DB_FILE)
+            atomic_write_json(report_path, report)
         return {"report_path": str(report_path), **report}
     finally:
         mt5.shutdown()
@@ -124,6 +135,8 @@ def main() -> None:
     parser.add_argument("--min-actual-rr", type=float, default=1.0)
     parser.add_argument("--watch", action="store_true")
     parser.add_argument("--interval", type=int, default=30)
+    parser.add_argument("--no-history", action="store_true", help="Do not append this observation to SQLite/CSV history")
+    parser.add_argument("--summary", action="store_true", help="Print history summary after each run")
     args = parser.parse_args()
 
     while True:
@@ -136,8 +149,13 @@ def main() -> None:
             min_confidence=args.min_confidence,
             max_spread_points=args.max_spread_points,
             min_actual_rr=args.min_actual_rr,
+            record_history=not args.no_history,
         )
         print(result["thai_summary"])
+        if "analysis_thai" in result:
+            print(result["analysis_thai"])
+        if args.summary and "history_summary" in result:
+            print(f"history_summary: {result['history_summary']}")
         print(f"report: {result['report_path']}")
         if not args.watch:
             break
