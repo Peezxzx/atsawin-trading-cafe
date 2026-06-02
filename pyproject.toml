@@ -1,0 +1,15 @@
+[project]
+name = "atsawin-trading-cafe"
+version = "0.1.0"
+description = "Trading Journal / Trading Cafe assistant separated from EA execution layer"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.optional-dependencies]
+api = ["fastapi", "uvicorn"]
+
+test = []
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
