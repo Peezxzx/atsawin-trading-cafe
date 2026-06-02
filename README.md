@@ -63,6 +63,21 @@ C:\Users\Administrator\AppData\Roaming\MetaQuotes\Terminal\Common\Files\atsawin\
 C:\Users\Administrator\AppData\Roaming\MetaQuotes\Terminal\Common\Files\atsawin\trading_cafe_history.csv
 ```
 
+ระบบ history ไม่ได้เก็บทุก tick แบบทื่อ ๆ แล้ว แต่ใช้ useful sampling:
+
+- เก็บเมื่อ action เปลี่ยน เช่น HOLD → BUY
+- เก็บเมื่อ setup fingerprint เปลี่ยน
+- เก็บเมื่อ actual RR, warning, outcome, spread bucket หรือ score เปลี่ยนอย่างมีนัยสำคัญ
+- เก็บ periodic sample สำหรับ signal เดิมทุกช่วงเวลาที่กำหนด
+- ข้าม row ซ้ำที่ไม่มีสาระใหม่ โดยใส่ `recorded=false` ใน report ล่าสุด
+
+และสร้าง insight summary อัตโนมัติ:
+
+```text
+C:\Users\Administrator\AppData\Roaming\MetaQuotes\Terminal\Common\Files\atsawin\trading_cafe_insights.json
+C:\Users\Administrator\AppData\Roaming\MetaQuotes\Terminal\Common\Files\atsawin\trading_cafe_insights.txt
+```
+
 รันแบบครั้งเดียว:
 
 ```bash

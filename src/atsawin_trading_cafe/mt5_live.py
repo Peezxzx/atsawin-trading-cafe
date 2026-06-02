@@ -12,7 +12,7 @@ import time
 from dataclasses import asdict
 from pathlib import Path
 
-from .history_store import DEFAULT_CSV_FILE, DEFAULT_DB_FILE, append_history, summarize_history
+from .history_store import DEFAULT_CSV_FILE, DEFAULT_DB_FILE, append_history, summarize_history, write_insights
 from .mt5_contract import (
     DEFAULT_REPORT_FILE,
     DEFAULT_SIGNAL_DIR,
@@ -24,6 +24,41 @@ from .mt5_contract import (
     read_signal,
 )
 from .plan_analysis import analysis_to_report, analyze_pretrade_plan, format_analysis_thai
+
+
+def format_console_summary(result: dict) -> str:
+    """Return an ASCII/English-only summary for Windows cmd.exe.
+
+    The JSON report still keeps the Thai text. This is only for the black
+    terminal window because some Windows console fonts render Thai as boxes.
+    """
+    plan = result.get("plan", {})
+    analysis = result.get("analysis", {})
+    lines = [
+        f"Pre-trade plan: {plan.get('mt5_symbol', '-')} {str(plan.get('action', '-')).upper()}",
+        f"confidence: {float(plan.get('confidence') or 0):.2f}",
+        f"entry: {plan.get('entry_price')}",
+        f"SL/TP: {plan.get('stop_loss')} / {plan.get('take_profit')}",
+        f"actual RR: {float(plan.get('actual_rr') or 0):.2f} (bridge RR: {float(plan.get('bridge_rr') or 0):.2f})",
+        f"lot: {float(plan.get('calculated_lot') or 0):.2f} | risk: {float(plan.get('risk_percent') or 0):.2f}% (~{float(plan.get('risk_amount') or 0):.2f})",
+        f"spread: {float(plan.get('spread_points') or 0):.1f} points",
+        f"allowed: {plan.get('allowed')}",
+        f"verdict: {analysis.get('verdict', '-')}",
+        f"research score: {float(analysis.get('score') or 0):.0f}/100",
+    ]
+    warnings = plan.get("warnings") or []
+    if warnings:
+        lines.append("warnings: " + ", ".join(str(item) for item in warnings))
+    reasons = plan.get("reasons") or []
+    if reasons:
+        lines.append("reasons: " + ", ".join(str(item) for item in reasons[:5]))
+    history = result.get("history") or {}
+    if history:
+        lines.append(f"history: recorded={history.get('recorded')} id={history.get('history_id')} reason={history.get('record_reason')}")
+    insights = result.get("insights") or {}
+    if insights:
+        lines.append(f"insights: rows={insights.get('rows')} unique_signals={insights.get('unique_source_signals')} duplicate_ratio={insights.get('duplicate_ratio')}")
+    return "\n".join(lines)
 
 
 def _import_mt5():
@@ -102,6 +137,8 @@ def run_once(
             min_actual_rr=min_actual_rr,
         )
         report = plan_to_report(plan, signal)
+        report["source_signal_timestamp"] = signal.get("timestamp")
+        report["source_signal_payload"] = signal
         analysis = analyze_pretrade_plan(plan)
         report["analysis"] = analysis_to_report(analysis)
         report["analysis_thai"] = format_analysis_thai(analysis)
@@ -110,13 +147,12 @@ def run_once(
         report_path = Path(signal_dir) / DEFAULT_REPORT_FILE
         atomic_write_json(report_path, report)
         if record_history:
-            history_meta = append_history(
-                Path(signal_dir) / DEFAULT_DB_FILE,
-                Path(signal_dir) / DEFAULT_CSV_FILE,
-                report,
-            )
+            db_path = Path(signal_dir) / DEFAULT_DB_FILE
+            csv_path = Path(signal_dir) / DEFAULT_CSV_FILE
+            history_meta = append_history(db_path, csv_path, report)
             report["history"] = history_meta
-            report["history_summary"] = summarize_history(Path(signal_dir) / DEFAULT_DB_FILE)
+            report["history_summary"] = summarize_history(db_path)
+            report["insights"] = write_insights(db_path, Path(signal_dir))
             atomic_write_json(report_path, report)
         return {"report_path": str(report_path), **report}
     finally:
@@ -137,6 +173,12 @@ def main() -> None:
     parser.add_argument("--interval", type=int, default=30)
     parser.add_argument("--no-history", action="store_true", help="Do not append this observation to SQLite/CSV history")
     parser.add_argument("--summary", action="store_true", help="Print history summary after each run")
+    parser.add_argument(
+        "--console-language",
+        choices=["thai", "english"],
+        default="thai",
+        help="Console output language. Use english for Windows cmd fonts that show Thai as boxes.",
+    )
     args = parser.parse_args()
 
     while True:
@@ -151,9 +193,12 @@ def main() -> None:
             min_actual_rr=args.min_actual_rr,
             record_history=not args.no_history,
         )
-        print(result["thai_summary"])
-        if "analysis_thai" in result:
-            print(result["analysis_thai"])
+        if args.console_language == "english":
+            print(format_console_summary(result))
+        else:
+            print(result["thai_summary"])
+            if "analysis_thai" in result:
+                print(result["analysis_thai"])
         if args.summary and "history_summary" in result:
             print(f"history_summary: {result['history_summary']}")
         print(f"report: {result['report_path']}")
