@@ -40,3 +40,36 @@
 - ถ้ามี future order flow ต้องมี manual confirmation
 - ทุก signal/order suggestion ต้องมี invalidation, risk, and reason
 - ห้ามรับประกันกำไรหรือบอกว่า AI ตัดสินใจแทนผู้ใช้
+
+## Trading Cafe report payload
+
+Trading Cafe อ่าน signal + MT5 live account/tick แล้วเขียนรายงานนี้กลับไปใน Common Files:
+
+```json
+{
+  "schema_version": "trading_cafe_report_v1",
+  "timestamp": "2026-06-02T10:31:00+00:00",
+  "source_signal": "bridge_mt5_pro_v2",
+  "plan": {
+    "allowed": true,
+    "action": "sell",
+    "symbol": "XAUUSD",
+    "mt5_symbol": "XAUUSDm",
+    "confidence": 0.76,
+    "entry_price": 4480.0,
+    "stop_loss": 4485.0,
+    "take_profit": 4470.0,
+    "bridge_rr": 2.0,
+    "actual_rr": 2.0,
+    "calculated_lot": 0.02,
+    "risk_percent": 2.5,
+    "risk_amount": 12.5,
+    "spread_points": 308.0,
+    "warnings": [],
+    "reasons": ["trend_down", "confirm_down"]
+  },
+  "thai_summary": "Pre-trade plan: XAUUSDm SELL — อนุญาตตามเงื่อนไข..."
+}
+```
+
+รายงานนี้ใช้ได้กับ dashboard/Telegram ทันที และอนาคต EA สามารถอ่าน `plan.allowed` เป็น gate เพิ่มเติมก่อน execute ได้

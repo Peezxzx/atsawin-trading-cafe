@@ -42,6 +42,39 @@ atsawin-trading-cafe/
     └── INTEGRATION_CONTRACT.md
 ```
 
+## เชื่อมกับ EA / MT5
+
+โปรเจกต์นี้เชื่อมกับ EA ผ่านไฟล์ Common เดียวกับที่ EA ใช้อยู่:
+
+```text
+C:\Users\Administrator\AppData\Roaming\MetaQuotes\Terminal\Common\Files\atsawin\latest_signal.json
+```
+
+Trading Cafe จะอ่าน `latest_signal.json`, ดึงข้อมูล live account/tick จาก MT5, คำนวณ pre-trade plan แล้วเขียนรายงานกลับไปที่:
+
+```text
+C:\Users\Administrator\AppData\Roaming\MetaQuotes\Terminal\Common\Files\atsawin\trading_cafe_report.json
+```
+
+รันแบบครั้งเดียว:
+
+```bash
+cd C:\Users\Administrator\repos\atsawin-trading-cafe
+python -m atsawin_trading_cafe.mt5_live --login 433684944 --server Exness-MT5Trial7 --risk-percent 2.5 --max-lot 1.0
+```
+
+รันแบบ watch ทุก 30 วินาที:
+
+```bash
+python -m atsawin_trading_cafe.mt5_live --login 433684944 --server Exness-MT5Trial7 --risk-percent 2.5 --max-lot 1.0 --watch --interval 30
+```
+
+หน้าที่ตอนนี้:
+
+- EA/bridge เดิมยังเป็นตัวสร้าง signal และ execute order
+- Trading Cafe อ่าน signal เดียวกันเพื่อคำนวณ lot, actual RR, spread, warning และสรุปภาษาไทย
+- ถ้าจะให้ EA อ่าน `trading_cafe_report.json` เพื่อใช้เป็น gate ก่อน execute สามารถเพิ่มใน EA phase ถัดไปได้
+
 ## Quick test
 
 ```bash
@@ -50,6 +83,7 @@ python -m py_compile src/atsawin_trading_cafe/*.py tests/*.py
 python tests/test_prompts.py
 python tests/test_journal.py
 python tests/test_risk.py
+python tests/test_mt5_contract.py
 ```
 
 ## Run API แบบ optional
